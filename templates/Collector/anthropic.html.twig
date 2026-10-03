@@ -1,0 +1,270 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block head %}
+    {{ parent() }}
+    <style>
+        .anthropic-call { margin-bottom: 2.5em; }
+        .anthropic-call > h3 { display: flex; align-items: center; gap: .5em; }
+        .anthropic-call > h3 .anthropic-meta { margin-left: auto; font-weight: normal; font-size: 13px; color: var(--color-muted); }
+        .anthropic-block { border: 1px solid var(--table-border-color); border-radius: 6px; margin: 0 0 .75em; }
+        .anthropic-block-head { display: flex; gap: .5em; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--table-border-color); background: var(--card-label-background); font-size: 12px; }
+        .anthropic-block-head strong { text-transform: uppercase; letter-spacing: .03em; }
+        .anthropic-block-head .anthropic-size { margin-left: auto; color: var(--color-muted); }
+        .anthropic-block pre { margin: 0; padding: 10px; max-height: 420px; overflow: auto; white-space: pre-wrap; word-break: break-word; background: var(--code-block-background); font-size: 12px; line-height: 1.5; }
+        .anthropic-block pre.anthropic-empty { color: var(--color-muted); font-style: italic; }
+        .anthropic-role { margin: 1.25em 0 .5em; font-size: 13px; font-weight: bold; }
+        .anthropic-kv th { width: 200px; }
+    </style>
+{% endblock %}
+
+{% block toolbar %}
+    {% if collector.callCount %}
+        {% set icon %}
+            {{ source('@Anthropic/Collector/icon.svg') }}
+            <span class="sf-toolbar-value">{{ collector.callCount }}</span>
+            <span class="sf-toolbar-info-piece-additional-detail">
+                <span class="sf-toolbar-label">in</span>
+                <span class="sf-toolbar-value">{{ '%.0f'|format(collector.totalTime) }}</span>
+                <span class="sf-toolbar-label">ms</span>
+            </span>
+        {% endset %}
+
+        {% set text %}
+            <div class="sf-toolbar-info-piece">
+                <b>Claude calls</b>
+                <span class="sf-toolbar-status">{{ collector.callCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Errors / refusals</b>
+                <span class="sf-toolbar-status {{ collector.errorCount > 0 ? 'sf-toolbar-status-red' }}">{{ collector.errorCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Total time</b>
+                <span>{{ '%.0f'|format(collector.totalTime) }} ms</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Input / output tokens</b>
+                <span>{{ collector.totals.input_tokens|number_format }} / {{ collector.totals.output_tokens|number_format }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Cache write / read</b>
+                <span>{{ collector.totals.cache_creation_input_tokens|number_format }} / {{ collector.totals.cache_read_input_tokens|number_format }}</span>
+            </div>
+            {% for model, count in collector.models %}
+                <div class="sf-toolbar-info-piece">
+                    <b>{{ model }}</b>
+                    <span>{{ count }}</span>
+                </div>
+            {% endfor %}
+        {% endset %}
+
+        {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', {link: profiler_url, status: collector.errorCount > 0 ? 'red' : ''}) }}
+    {% endif %}
+{% endblock %}
+
+{% block menu %}
+    <span class="label {{ collector.callCount == 0 ? 'disabled' }} {{ collector.errorCount > 0 ? 'label-status-error' }}">
+        <span class="icon">{{ source('@Anthropic/Collector/icon.svg') }}</span>
+        <strong>Anthropic</strong>
+        {% if collector.errorCount > 0 %}
+            <span class="count">{{ collector.errorCount }}</span>
+        {% elseif collector.callCount %}
+            <span class="count">{{ collector.callCount }}</span>
+        {% endif %}
+    </span>
+{% endblock %}
+
+{% macro blocks(blocks) %}
+    {% for block in blocks %}
+        <div class="anthropic-block">
+            <div class="anthropic-block-head">
+                <strong>{{ block.type|replace({'_': ' '}) }}</strong>
+                {% if block.cache %}<span class="badge badge-success">cache {{ block.cache }}</span>{% endif %}
+                {% if block.text is not null %}<span class="anthropic-size">{{ block.text|length|number_format }} chars</span>{% endif %}
+            </div>
+            {% if block.text is not null %}
+                {% if block.text is empty %}
+                    <pre class="anthropic-empty">{{ block.type == 'thinking' ? 'Thinking content omitted (set thinking.display to "summarized" to see it)' : 'empty' }}</pre>
+                {% else %}
+                    <pre>{{ block.text }}</pre>
+                {% endif %}
+            {% else %}
+                <pre>{{ block.extra }}</pre>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="text-muted">None.</p>
+    {% endfor %}
+{% endmacro %}
+
+{% block panel %}
+    {% import _self as anthropic %}
+
+    <h2>Anthropic</h2>
+
+    {% if collector.callCount == 0 %}
+        <div class="empty empty-panel">
+            <p>No Claude API calls were made during this request.</p>
+        </div>
+    {% else %}
+        <div class="metrics">
+            <div class="metric">
+                <span class="value">{{ collector.callCount }}</span>
+                <span class="label">Calls</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ '%.0f'|format(collector.totalTime) }} <span class="unit">ms</span></span>
+                <span class="label">Total time</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.errorCount }}</span>
+                <span class="label">Errors / refusals</span>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric">
+                <span class="value">{{ collector.totals.input_tokens|number_format }}</span>
+                <span class="label">Input tokens</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.totals.output_tokens|number_format }}</span>
+                <span class="label">Output tokens</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.totals.cache_creation_input_tokens|number_format }}</span>
+                <span class="label">Cache write</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.totals.cache_read_input_tokens|number_format }}</span>
+                <span class="label">Cache read</span>
+            </div>
+            {% if collector.cacheHitRatio is not null %}
+                <div class="metric">
+                    <span class="value">{{ '%.0f'|format(collector.cacheHitRatio * 100) }} <span class="unit">%</span></span>
+                    <span class="label">Cache hit</span>
+                </div>
+            {% endif %}
+        </div>
+
+        {% for call in collector.calls %}
+            <div class="anthropic-call">
+                <h3>
+                    #{{ loop.index }} {{ call.model ?? 'unknown model' }}
+                    <span class="badge {{ call.isError ? 'badge-danger' : 'badge-success' }}">{{ call.status ?? 'no response' }}</span>
+                    {% if call.stopReason == 'refusal' %}<span class="badge badge-danger">refusal</span>{% endif %}
+                    {% if call.preset %}<span class="badge">preset {{ call.preset }}</span>{% endif %}
+                    {% if call.retry > 0 %}<span class="badge badge-warning">retry {{ call.retry }}</span>{% endif %}
+                    {% if call.requestedModel and call.model and call.requestedModel != call.model %}<span class="badge badge-warning">fallback from {{ call.requestedModel }}</span>{% endif %}
+                    <span class="anthropic-meta">{{ call.method }} {{ call.path }} &middot; {{ '%.0f'|format(call.duration) }} ms</span>
+                </h3>
+
+                {% if call.error %}
+                    <div class="sf-alert sf-alert-error">{% if call.errorType %}<strong>{{ call.errorType }}:</strong> {% endif %}{{ call.error }}</div>
+                {% endif %}
+
+                <div class="sf-tabs">
+                    <div class="tab">
+                        <h3 class="tab-title">Overview</h3>
+                        <div class="tab-content">
+                            <table class="anthropic-kv">
+                                <tbody>
+                                    <tr><th>Model</th><td>{{ call.model ?? '-' }}{% if call.requestedModel and call.requestedModel != call.model %} <span class="text-muted">(requested {{ call.requestedModel }})</span>{% endif %}</td></tr>
+                                    <tr><th>Request ID</th><td>{{ call.requestId ?? '-' }}</td></tr>
+                                    <tr><th>Started</th><td>{{ call.startedAt|date('H:i:s') }} &middot; {{ '%.0f'|format(call.duration) }} ms</td></tr>
+                                    <tr><th>Stop reason</th><td>{{ call.stopReason ?? '-' }}</td></tr>
+                                    {% if call.stopDetails %}
+                                        <tr><th>Stop details</th><td>{{ call.stopDetails.category ?? '-' }}{% if call.stopDetails.explanation ?? false %} &middot; {{ call.stopDetails.explanation }}{% endif %}</td></tr>
+                                    {% endif %}
+                                    <tr><th>Input tokens</th><td>{{ call.usage.input_tokens|number_format }}</td></tr>
+                                    <tr><th>Output tokens</th><td>{{ call.usage.output_tokens|number_format }}</td></tr>
+                                    <tr><th>Cache write</th><td>{{ call.usage.cache_creation_input_tokens|number_format }}</td></tr>
+                                    <tr><th>Cache read</th><td>{{ call.usage.cache_read_input_tokens|number_format }}</td></tr>
+                                    {% if call.serviceTier %}<tr><th>Service tier</th><td>{{ call.serviceTier }}</td></tr>{% endif %}
+                                    {% if call.betas %}<tr><th>Beta headers</th><td>{{ call.betas }}</td></tr>{% endif %}
+                                    {% if call.tools is not empty %}<tr><th>Tools</th><td>{{ call.tools|join(', ') }}</td></tr>{% endif %}
+                                </tbody>
+                            </table>
+
+                            {% for note in call.notes %}
+                                <div class="sf-alert sf-alert-warning">{{ note }}</div>
+                            {% endfor %}
+
+                            {% if call.viaWrapper %}
+                                <h4>Options</h4>
+                                <table class="anthropic-kv">
+                                    <thead><tr><th>Option</th><th>Value</th><th>From</th></tr></thead>
+                                    <tbody>
+                                        {% for row in call.options %}
+                                            <tr><th>{{ row.key }}</th><td><code>{{ row.value }}</code></td><td class="text-muted">{{ row.source }}</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
+
+                            <h4>Parameters sent</h4>
+                            <table class="anthropic-kv">
+                                <tbody>
+                                    {% for key, value in call.params %}
+                                        <tr><th>{{ key }}</th><td><code>{{ value is iterable ? value|json_encode : (value is same as(true) ? 'true' : (value is same as(false) ? 'false' : value)) }}</code></td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab">
+                        <h3 class="tab-title">Prompt <span class="badge">{{ call.messages|length }}</span></h3>
+                        <div class="tab-content">
+                            <div class="anthropic-role">System</div>
+                            {{ anthropic.blocks(call.system) }}
+
+                            {% for message in call.messages %}
+                                <div class="anthropic-role">#{{ loop.index }} {{ message.role|capitalize }}</div>
+                                {{ anthropic.blocks(message.blocks) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="tab {{ call.output is empty ? 'disabled' }}">
+                        <h3 class="tab-title">Response <span class="badge">{{ call.output|length }}</span></h3>
+                        <div class="tab-content">
+                            {{ anthropic.blocks(call.output) }}
+                        </div>
+                    </div>
+
+                    <div class="tab {{ call.rateLimits is empty ? 'disabled' }}">
+                        <h3 class="tab-title">Rate limits</h3>
+                        <div class="tab-content">
+                            <table class="anthropic-kv">
+                                <tbody>
+                                    {% for name, value in call.rateLimits %}
+                                        <tr><th>{{ name }}</th><td>{{ value }}</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab">
+                        <h3 class="tab-title">Raw request</h3>
+                        <div class="tab-content">
+                            <h4>Headers</h4>
+                            {{ profiler_dump(call.requestHeaders, maxDepth=1) }}
+                            <h4>Body</h4>
+                            {{ profiler_dump(call.requestBody, maxDepth=2) }}
+                        </div>
+                    </div>
+
+                    <div class="tab">
+                        <h3 class="tab-title">Raw response</h3>
+                        <div class="tab-content">
+                            <h4>Headers</h4>
+                            {{ profiler_dump(call.responseHeaders, maxDepth=1) }}
+                            <h4>Body</h4>
+                            {{ profiler_dump(call.responseBody, maxDepth=3) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

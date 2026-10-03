@@ -1,0 +1,39 @@
+{
+    "name": "golo/symfony-anthropic-wrapper",
+    "description": "Symfony bundle for the official Anthropic PHP SDK: YAML-configured defaults, per-model options and presets, plus a profiler panel for every Claude call.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": [
+        "anthropic",
+        "claude",
+        "symfony",
+        "bundle",
+        "sdk",
+        "profiler"
+    ],
+    "authors": [
+        {
+            "name": "Barry O'Neil"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "anthropic-ai/sdk": ">=0.54 <2.0",
+        "psr/http-message": "^1.1 || ^2.0",
+        "symfony/config": "^6.4 || ^7.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0",
+        "symfony/framework-bundle": "^6.4 || ^7.0",
+        "symfony/http-kernel": "^6.4 || ^7.0",
+        "symfony/service-contracts": "^3.0"
+    },
+    "suggest": {
+        "symfony/web-profiler-bundle": "Shows the Anthropic panel in the profiler",
+        "symfony/stopwatch": "Adds each Claude call to the profiler Performance timeline"
+    },
+    "autoload": {
+        "psr-4": {
+            "Golo\\SymfonyAnthropic\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
