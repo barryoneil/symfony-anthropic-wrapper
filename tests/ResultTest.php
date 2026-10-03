@@ -14,12 +14,12 @@ class ResultTest extends TestCase
         $result = $this->makeResult([
             'content' => [
                 ['type' => 'thinking', 'thinking' => 'Planning', 'signature' => 'sig'],
-                ['type' => 'text', 'text' => 'Once upon ', 'citations' => null],
-                ['type' => 'text', 'text' => 'a time', 'citations' => null],
+                ['type' => 'text', 'text' => 'Hello ', 'citations' => null],
+                ['type' => 'text', 'text' => 'world', 'citations' => null],
             ],
         ]);
 
-        $this->assertSame('Once upon a time', $result->text());
+        $this->assertSame('Hello world', $result->text());
         $this->assertSame('Planning', $result->thinking());
         $this->assertFalse($result->isRefusal());
         $this->assertNull($result->refusalCategory());

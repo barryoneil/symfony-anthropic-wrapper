@@ -15,10 +15,10 @@ class RequestFactoryTest extends TestCase
         $factory = new RequestFactory(
             defaults: ['model' => 'claude-opus-5-5', 'max_tokens' => 1000, 'effort' => 'low', 'temperature' => 0.5],
             models: ['claude-opus-5-5' => ['max_tokens' => 2000, 'effort' => 'medium']],
-            presets: ['writer' => ['effort' => 'high']],
+            presets: ['thorough' => ['effort' => 'high']],
         );
 
-        $request = $factory->build(self::MESSAGES, preset: 'writer', options: ['temperature' => 0.9]);
+        $request = $factory->build(self::MESSAGES, preset: 'thorough', options: ['temperature' => 0.9]);
 
         $this->assertSame(2000, $request->params['maxTokens']);
         $this->assertSame(['effort' => 'high'], $request->params['outputConfig']);
@@ -26,10 +26,10 @@ class RequestFactoryTest extends TestCase
         $this->assertSame([
             'model' => 'defaults',
             'max_tokens' => 'model: claude-opus-5-5',
-            'effort' => 'preset: writer',
+            'effort' => 'preset: thorough',
             'temperature' => 'call',
         ], $request->sources);
-        $this->assertSame('writer', $request->preset);
+        $this->assertSame('thorough', $request->preset);
     }
 
     public function testModelRulesFollowTheModelChosenByPresetOrCall(): void
@@ -204,9 +204,9 @@ class RequestFactoryTest extends TestCase
     public function testUnknownPresetThrows(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown Anthropic preset "nope". Configured presets: writer.');
+        $this->expectExceptionMessage('Unknown Anthropic preset "nope". Configured presets: thorough.');
 
-        (new RequestFactory(defaults: ['model' => 'm'], presets: ['writer' => []]))->build(self::MESSAGES, preset: 'nope');
+        (new RequestFactory(defaults: ['model' => 'm'], presets: ['thorough' => []]))->build(self::MESSAGES, preset: 'nope');
     }
 
     public function testUnknownOptionThrows(): void
