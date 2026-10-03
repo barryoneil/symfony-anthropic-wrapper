@@ -11,9 +11,9 @@ use Golo\SymfonyAnthropic\Request\RequestFactory;
  * Sends messages through the Anthropic SDK using the options configured under `anthropic:`.
  *
  *     $result = $claude->create(
- *         messages: [$claude->user($claude->text($context, cache: true), 'Write page 2')],
+ *         messages: [$claude->user($claude->text($context, cache: true), $question)],
  *         system: [$claude->text($systemPrompt, cache: true)],
- *         preset: 'story_writer',
+ *         preset: 'thorough',
  *     );
  *     $result->text();
  *

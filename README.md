@@ -51,12 +51,12 @@ anthropic:
 
     # 3. Named option sets, chosen per call
     presets:
-        story_writer:
+        thorough:
             model: claude-opus-5-5
-            effort: medium
-        classifier:
+            effort: high
+        quick:
             model: claude-haiku-4-5
-            max_tokens: 256
+            max_tokens: 1024
 ```
 
 Keys under `models:` are Anthropic model IDs exactly as the API takes them (`claude-opus-5-5`, `claude-haiku-4-5`, or `anthropic.claude-opus-5-5` on Bedrock). They are not converted to underscores like normal Symfony config keys.
@@ -94,21 +94,21 @@ Requests that need a beta header go to the beta messages endpoint. All others go
 ```php
 use Golo\SymfonyAnthropic\Claude;
 
-class StoryWriter
+class ExampleService
 {
     public function __construct(private Claude $claude) {}
 
-    public function write(string $context, string $instruction): ?string
+    public function ask(string $systemPrompt, string $context, string $question): ?string
     {
         $result = $this->claude->create(
             messages: [
                 $this->claude->user(
                     $this->claude->text($context, cache: true),   // cached prefix
-                    $instruction,                                  // strings become text blocks
+                    $question,                                     // strings become text blocks
                 ),
             ],
-            system: [$this->claude->text('You are a storyteller.', cache: true)],
-            preset: 'story_writer',
+            system: [$this->claude->text($systemPrompt, cache: true)],
+            preset: 'thorough',
             options: ['max_tokens' => 8000],                      // per-call override
         );
 
