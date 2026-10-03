@@ -20,6 +20,8 @@ Golo\SymfonyAnthropic\AnthropicBundle::class => ['all' => true],
 
 Set `ANTHROPIC_API_KEY` in `.env.local`.
 
+**Requirements:** the SDK needs a PSR-18 HTTP client and PSR-17 factories. Most Symfony apps already have them. If not, run `composer require symfony/http-client nyholm/psr7`. php-http/discovery's Composer plugin offers to install them when you add the SDK.
+
 ## Configuration
 
 ```yaml
@@ -56,6 +58,8 @@ anthropic:
             model: claude-haiku-4-5
             max_tokens: 256
 ```
+
+Keys under `models:` are Anthropic model IDs exactly as the API takes them (`claude-opus-5-5`, `claude-haiku-4-5`, or `anthropic.claude-opus-5-5` on Bedrock). They are not converted to underscores like normal Symfony config keys.
 
 Later layers win: **defaults < models < presets < per-call options**. An unset (null) option falls through to the earlier layer. The exception is `betas`, which accumulate across layers.
 
@@ -159,3 +163,10 @@ With `kernel.debug` on, the **Anthropic** tab shows these things.
 - **Raw request / raw response:** full headers and JSON (API key redacted)
 
 Each call also appears on the Performance timeline. SDK retries show as separate calls with a "retry N" badge. Streamed response bodies aren't captured, because SSE streams can't be rewound.
+
+## Development
+
+```bash
+composer install
+composer test
+```
